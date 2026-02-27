@@ -1,0 +1,44 @@
+preferences:
+  general:
+    units: deg
+
+window:
+  size: [1512, 982]
+  color: [0, 0, 0]
+  fullscr: true
+  waitBlanking: true
+  screen: 0
+
+monitor:
+  name: default
+  width: 88
+  distance: 65.5
+  gamma: 1
+
+mouse:
+  visible: false
+
+mri:
+  simulate: false
+  sync: t
+  TR: 2.0
+  volumes: 10
+  skip: 0
+
+deepmreye:
+  fixation:
+    n_locs: [10, 10]
+    duration: 1.5
+  pursuit:
+    angles_start: 0
+    angles_step: 15
+    amplitudes_deg: [4, 6, 8]
+    duration: 1.5
+  pictures:
+    path: images
+    n_pics: 10
+    duration: 3.0
+  cross_size_deg: 0.5
+  cross_line_width: 3
+  instruction_duration: 4
+  wait_after_run: 5
