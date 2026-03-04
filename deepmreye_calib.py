@@ -206,7 +206,8 @@ class DeepMReyeCalibSession(Session):
 
         # Compute image size: height / 3 in pixels, convert to degrees
         pic_size_pix = self.win.size[1] / 3 * 2  # diameter = 2/3 of height
-        pic_size_deg = pic_size_pix / self.pix_per_deg
+        pix_per_deg = self.win.size[1] / height_deg
+        pic_size_deg = pic_size_pix / pix_per_deg
 
         image_stims = []
         image_names = []
