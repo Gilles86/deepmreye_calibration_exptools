@@ -346,26 +346,26 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='DeepMReye calibration experiment',
     )
-    parser.add_argument('--subject', required=True, help='Subject ID')
-    parser.add_argument('--run', type=int, default=1, help='Run number')
+    parser.add_argument('subject', type=int, help='Subject number')
+    parser.add_argument('session', type=int, help='Session number')
     parser.add_argument('--settings', default='settings.yml',
                         help='Path to settings YAML file')
     parser.add_argument('--debug', action='store_true',
                         help='Short debug run (~30s, windowed)')
     args = parser.parse_args()
 
-    output_str = f'sub-{args.subject}_run-{args.run}_task-deepmreyecalib'
+    output_str = f'sub-{args.subject:02d}_ses-{args.session}_task-deepmreyecalib'
     settings_path = op.join(op.dirname(op.abspath(__file__)), args.settings)
 
-    session = DeepMReyeCalibSession(
+    calib_session = DeepMReyeCalibSession(
         output_str,
         output_dir=op.join(op.dirname(op.abspath(__file__)), 'logs'),
         settings_file=settings_path,
     )
 
     if args.debug:
-        session.settings = _apply_debug_settings(session.settings)
+        calib_session.settings = _apply_debug_settings(calib_session.settings)
 
-    session.create_trials()
-    session.run()
-    session.quit()
+    calib_session.create_trials()
+    calib_session.run()
+    calib_session.quit()
