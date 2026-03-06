@@ -19,7 +19,8 @@ import matplotlib.pyplot as plt
 from psychopy.event import waitKeys
 from psychopy.visual import Line, ImageStim, TextStim
 
-from exptools2.core import Session, Trial
+from exptools2.core import Trial
+from exptools2.core import PylinkEyetrackerSession
 from trajectories import generate_fixation_grid, generate_pursuit_trajectory
 
 
@@ -138,12 +139,15 @@ class PictureViewingTrial(Trial):
 #                           Session class                             #
 # ------------------------------------------------------------------ #
 
-class DeepMReyeCalibSession(Session):
+class DeepMReyeCalibSession(PylinkEyetrackerSession):
     """Calibration session for DeepMReye."""
 
-    def __init__(self, output_str, output_dir=None, settings_file=None):
+    def __init__(self, output_str, output_dir=None, settings_file=None,
+                 eyetracker_on=False, calibrate_eyetracker=False):
         super().__init__(output_str, output_dir=output_dir,
-                         settings_file=settings_file)
+                         settings_file=settings_file,
+                         eyetracker_on=eyetracker_on)
+        self.show_eyetracker_calibration = calibrate_eyetracker
         self.frame_data = []
 
         # Create fixation cross stimuli (two lines)
@@ -269,6 +273,9 @@ class DeepMReyeCalibSession(Session):
 
     def run(self):
         """Run the full experiment."""
+        if self.eyetracker_on and self.show_eyetracker_calibration:
+            self.calibrate_eyetracker()
+
         sync_key = self.settings['mri'].get('sync', 's')
 
         # Wait for scanner trigger (also accept 'q' to quit)
@@ -283,6 +290,9 @@ class DeepMReyeCalibSession(Session):
             return
 
         self.start_experiment()
+
+        if self.eyetracker_on:
+            self.start_recording_eyetracker()
 
         for trial in self.trials:
             trial.run()
@@ -351,6 +361,8 @@ if __name__ == '__main__':
     parser.add_argument('session', type=int, help='Session number')
     parser.add_argument('--settings', default='settings.yml',
                         help='Path to settings YAML file')
+    parser.add_argument('--use_eyetracker', action='store_true',
+                        help='Enable Eyelink eyetracker')
     parser.add_argument('--debug', action='store_true',
                         help='Short debug run (~30s, windowed)')
     parser.add_argument('--no_pictures', action='store_true',
@@ -364,6 +376,8 @@ if __name__ == '__main__':
         output_str,
         output_dir=op.join(op.dirname(op.abspath(__file__)), 'logs'),
         settings_file=settings_path,
+        eyetracker_on=args.use_eyetracker,
+        calibrate_eyetracker=args.use_eyetracker,
     )
 
     if args.debug:
