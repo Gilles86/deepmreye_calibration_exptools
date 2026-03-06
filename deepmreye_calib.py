@@ -166,7 +166,7 @@ class DeepMReyeCalibSession(Session):
         self.cross_v.draw()
         self.cross_h.draw()
 
-    def create_trials(self):
+    def create_trials(self, include_pictures=True):
         """Build the full list of trials."""
         dm = self.settings['deepmreye']
 
@@ -253,18 +253,19 @@ class DeepMReyeCalibSession(Session):
             trial_nr += 1
 
         # Picture viewing block
-        self.trials.append(InstructionTrial(
-            self, trial_nr,
-            'Free viewing task\n\nExplore the following images however you like',
-            instr_dur,
-        ))
-        trial_nr += 1
-
-        for stim, name in zip(image_stims, image_names):
-            self.trials.append(PictureViewingTrial(
-                self, trial_nr, stim, name, dm['pictures']['duration'],
+        if include_pictures:
+            self.trials.append(InstructionTrial(
+                self, trial_nr,
+                'Free viewing task\n\nExplore the following images however you like',
+                instr_dur,
             ))
             trial_nr += 1
+
+            for stim, name in zip(image_stims, image_names):
+                self.trials.append(PictureViewingTrial(
+                    self, trial_nr, stim, name, dm['pictures']['duration'],
+                ))
+                trial_nr += 1
 
     def run(self):
         """Run the full experiment."""
@@ -352,6 +353,8 @@ if __name__ == '__main__':
                         help='Path to settings YAML file')
     parser.add_argument('--debug', action='store_true',
                         help='Short debug run (~30s, windowed)')
+    parser.add_argument('--no_pictures', action='store_true',
+                        help='Skip the free-viewing picture block')
     args = parser.parse_args()
 
     output_str = f'sub-{args.subject:02d}_ses-{args.session}_task-deepmreyecalib'
@@ -366,6 +369,6 @@ if __name__ == '__main__':
     if args.debug:
         calib_session.settings = _apply_debug_settings(calib_session.settings)
 
-    calib_session.create_trials()
+    calib_session.create_trials(include_pictures=not args.no_pictures)
     calib_session.run()
     calib_session.quit()
