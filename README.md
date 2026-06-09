@@ -17,18 +17,26 @@ The full run takes approximately **5 minutes 7 seconds**:
 ## Usage
 
 ```bash
-python deepmreye_calib.py --subject 01 --run 1
+python deepmreye_calib.py <subject> <session>
 ```
 
 - The script waits for a **`t` keypress** to start (i.e. the MRI scanner trigger).
 - Press **`q`** at any time to quit.
+- `--use_eyetracker` enables the Eyelink eyetracker.
+- `--no_pictures` skips the free-viewing picture block.
+
+At the Spinoza 7T (projector where only the bottom of the screen is visible):
+
+```bash
+python deepmreye_calib.py 1 1 --settings settings_spinoza.yml
+```
 
 ### Debug mode
 
 Short run (~17s) in a windowed display for testing:
 
 ```bash
-python deepmreye_calib.py --subject test --run 1 --debug
+python deepmreye_calib.py 1 1 --debug
 ```
 
 ## Requirements
@@ -40,12 +48,24 @@ python deepmreye_calib.py --subject test --run 1 --debug
 
 ## Configuration
 
-All settings are in `settings.yml`. Key sections:
+Settings live in YAML files passed via `--settings` (default `settings.yml`).
+`settings_spinoza.yml` is preconfigured for the Spinoza 7T projector. Key sections:
 
 - `window` — screen resolution, fullscreen
 - `monitor` — physical screen width (cm) and viewing distance (cm)
 - `mri` — trigger key (`sync: t`), TR, simulated mode
 - `deepmreye` — task durations, grid size, pursuit parameters, image count
+
+### Partially-visible screens (`visible_fraction`)
+
+When only the bottom portion of the projected screen is visible (e.g. the head
+coil clips the top), set `deepmreye.visible_fraction` to the visible fraction
+(`0.7` = bottom 70%). The calibration window's **height** is then shrunk to the
+visible band and **all stimuli are shifted down** so everything stays in view;
+the horizontal extent is left unchanged, so horizontal eccentricity matches the
+full-screen case. The logged target positions reflect the actual on-screen
+(shifted) coordinates, so the DeepMReye labels remain correct. Default `1.0` =
+full screen visible.
 
 ## MRI acquisition tips
 

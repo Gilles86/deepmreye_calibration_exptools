@@ -39,7 +39,8 @@ class InstructionTrial(Trial):
             parameters={'trial_type': 'instruction'},
             verbose=True,
         )
-        self.txt_stim = TextStim(self.session.win, text=txt, height=0.8)
+        self.txt_stim = TextStim(self.session.win, text=txt, height=0.8,
+                                 pos=(0, self.session.y_offset))
 
     def draw(self):
         self.txt_stim.draw()
@@ -140,7 +141,15 @@ class PictureViewingTrial(Trial):
 # ------------------------------------------------------------------ #
 
 class DeepMReyeCalibSession(PylinkEyetrackerSession):
-    """Calibration session for DeepMReye."""
+    """Calibration session for DeepMReye.
+
+    Handles partially-visible screens via ``deepmreye.visible_fraction``:
+    when only the bottom fraction *f* of the screen can be seen, the
+    calibration window's height is shrunk to that band and every stimulus
+    is shifted down by ``y_offset`` so it is re-centred in the visible
+    area. The horizontal extent is left unchanged (the full screen width
+    is in view), so horizontal eccentricity matches the full-screen case.
+    """
 
     def __init__(self, output_str, output_dir=None, settings_file=None,
                  eyetracker_on=False, calibrate_eyetracker=False):
@@ -149,6 +158,7 @@ class DeepMReyeCalibSession(PylinkEyetrackerSession):
                          eyetracker_on=eyetracker_on)
         self.show_eyetracker_calibration = calibrate_eyetracker
         self.frame_data = []
+        self.y_offset = 0.0  # vertical shift (deg); set in create_trials
 
         # Create fixation cross stimuli (two lines)
         dm = self.settings['deepmreye']
@@ -164,7 +174,11 @@ class DeepMReyeCalibSession(PylinkEyetrackerSession):
         )
 
     def draw_cross(self, pos):
-        """Draw the fixation cross at *pos* (x, y) in degrees."""
+        """Draw the fixation cross at *pos* (x, y) in degrees.
+
+        *pos* already includes the vertical offset (baked into the target
+        positions by :meth:`create_trials`), so no extra shift is applied.
+        """
         self.cross_v.pos = pos
         self.cross_h.pos = pos
         self.cross_v.draw()
@@ -174,7 +188,8 @@ class DeepMReyeCalibSession(PylinkEyetrackerSession):
         """Build the full list of trials."""
         dm = self.settings['deepmreye']
 
-        # Calibration window: height in deg / 1.25 (matches original logic)
+        # --- Geometry, accounting for a partially-visible screen ---------
+        # Full vertical extent of the screen in degrees of visual angle.
         height_deg = 2 * np.degrees(
             np.arctan(
                 (self.monitor.getWidth()
@@ -182,12 +197,25 @@ class DeepMReyeCalibSession(PylinkEyetrackerSession):
                 / (2 * self.monitor.getDistance())
             )
         )
-        win_size_deg = height_deg / 1.25
+        # Fraction of the screen visible (from the bottom); 1.0 = all.
+        f = dm.get('visible_fraction', 1.0)
+        # Re-centre stimuli in the visible band: its centre sits at
+        # y = -(1 - f)/2 * height relative to the screen centre.
+        self.y_offset = -(1.0 - f) / 2.0 * height_deg
+        visible_height_deg = f * height_deg
+
+        # Calibration window (original margin of height / 1.25). Width is
+        # unconstrained by the visible band, so keep the full horizontal
+        # extent; only the height is fit to the visible band.
+        win_x_deg = height_deg / 1.25
+        win_y_deg = visible_height_deg / 1.25
+        win_size_deg = (win_x_deg, win_y_deg)
 
         # --- Fixation grid ---
         fix_xy = generate_fixation_grid(
             win_size_deg, dm['fixation']['n_locs'],
         )
+        fix_xy[:, 1] += self.y_offset
 
         # --- Pursuit trajectories ---
         angles = np.deg2rad(
@@ -200,6 +228,8 @@ class DeepMReyeCalibSession(PylinkEyetrackerSession):
             dm['pursuit']['duration'],
             self.actual_framerate,
         )
+        for traj in pursuit_trajs:
+            traj[:, 1] += self.y_offset
 
         # --- Images ---
         script_dir = op.dirname(op.abspath(__file__))
@@ -208,8 +238,8 @@ class DeepMReyeCalibSession(PylinkEyetrackerSession):
         n_pics = min(dm['pictures']['n_pics'], len(all_images))
         chosen = list(np.random.choice(all_images, size=n_pics, replace=False))
 
-        # Compute image size: height / 3 in pixels, convert to degrees
-        pic_size_pix = self.win.size[1] / 3 * 2  # diameter = 2/3 of height
+        # Image diameter = 2/3 of the visible height, converted to degrees
+        pic_size_pix = self.win.size[1] * f / 3 * 2
         pix_per_deg = self.win.size[1] / height_deg
         pic_size_deg = pic_size_pix / pix_per_deg
 
@@ -219,6 +249,7 @@ class DeepMReyeCalibSession(PylinkEyetrackerSession):
             stim = ImageStim(
                 self.win, image=img_path,
                 size=(pic_size_deg, pic_size_deg), units='deg',
+                pos=(0, self.y_offset),
             )
             image_stims.append(stim)
             image_names.append(op.basename(img_path))
@@ -281,7 +312,8 @@ class DeepMReyeCalibSession(PylinkEyetrackerSession):
         # Wait for scanner trigger (also accept 'q' to quit)
         stim = TextStim(self.win,
                         text=f"Waiting for scanner trigger ('{sync_key}')...\n\n"
-                             "Press 'q' to quit.")
+                             "Press 'q' to quit.",
+                        pos=(0, self.y_offset))
         stim.draw()
         self.win.flip()
         key = waitKeys(keyList=[sync_key, 'q'])
@@ -301,6 +333,7 @@ class DeepMReyeCalibSession(PylinkEyetrackerSession):
         self.display_text(
             'Well done!',
             duration=self.settings['deepmreye']['wait_after_run'],
+            pos=(0, self.y_offset),
         )
 
         self.close()

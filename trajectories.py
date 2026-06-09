@@ -5,6 +5,14 @@ Ported from getFixLocations.m and getFixLocations_pursuit.m.
 import numpy as np
 
 
+def _as_xy(win_size_deg):
+    """Return (win_x, win_y) from a scalar (square) or (x, y) pair."""
+    if np.isscalar(win_size_deg):
+        return float(win_size_deg), float(win_size_deg)
+    win_x, win_y = win_size_deg
+    return float(win_x), float(win_y)
+
+
 def generate_fixation_grid(win_size_deg, n_locs):
     """Create an evenly-spaced grid of fixation positions in degrees.
 
@@ -12,8 +20,9 @@ def generate_fixation_grid(win_size_deg, n_locs):
 
     Parameters
     ----------
-    win_size_deg : float
-        Calibration window size (symmetric in x and y) in degrees.
+    win_size_deg : float or (float, float)
+        Calibration window size in degrees. A scalar gives a square window;
+        a (width, height) pair gives independent x/y extents.
     n_locs : list of int
         [n_x, n_y] grid dimensions.
 
@@ -22,8 +31,9 @@ def generate_fixation_grid(win_size_deg, n_locs):
     xy : ndarray, shape (n_x * n_y, 2)
         Shuffled fixation positions in degrees.
     """
-    x = np.linspace(-win_size_deg / 2, win_size_deg / 2, n_locs[0])
-    y = np.linspace(-win_size_deg / 2, win_size_deg / 2, n_locs[1])
+    win_x, win_y = _as_xy(win_size_deg)
+    x = np.linspace(-win_x / 2, win_x / 2, n_locs[0])
+    y = np.linspace(-win_y / 2, win_y / 2, n_locs[1])
     xx, yy = np.meshgrid(x, y, indexing='ij')
     xy = np.column_stack([xx.ravel(), yy.ravel()])
     np.random.shuffle(xy)
@@ -39,8 +49,9 @@ def generate_pursuit_trajectory(win_size_deg, angles, amplitudes_deg,
 
     Parameters
     ----------
-    win_size_deg : float
-        Calibration window size in degrees (symmetric).
+    win_size_deg : float or (float, float)
+        Calibration window size in degrees. A scalar gives a square window;
+        a (width, height) pair bounds x and y independently.
     angles : array-like
         Movement angles in radians.
     amplitudes_deg : array-like
@@ -62,7 +73,9 @@ def generate_pursuit_trajectory(win_size_deg, angles, amplitudes_deg,
     mov_angles = np.tile(angles, len(amplitudes_deg))
     mov_amp = np.repeat(amplitudes_deg, len(angles))
 
-    calib_half = win_size_deg / 2
+    win_x, win_y = _as_xy(win_size_deg)
+    calib_half_x = win_x / 2
+    calib_half_y = win_y / 2
     n_trials = len(mov_angles) + 1  # +1 for the starting position
 
     # Retry from scratch until a valid trajectory is found
@@ -83,7 +96,7 @@ def generate_pursuit_trajectory(win_size_deg, angles, amplitudes_deg,
             new_x = waypoints[-1][0] + amp * np.cos(angle)
             new_y = waypoints[-1][1] + amp * np.sin(angle)
 
-            if (abs(new_x) > calib_half or abs(new_y) > calib_half):
+            if (abs(new_x) > calib_half_x or abs(new_y) > calib_half_y):
                 stuck += 1
                 continue
 

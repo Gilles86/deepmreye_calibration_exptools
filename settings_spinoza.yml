@@ -3,17 +3,17 @@ preferences:
     units: deg
 
 window:
-  size: [1512, 982]
+  size: [1920, 1080]
   color: [0, 0, 0]
   fullscr: true
   waitBlanking: true
   screen: 0
 
 monitor:
-  name: default
-  width: 88
-  distance: 65.5
-  gamma: 1
+  name: Spinoza_7T
+  width: 70.9      # width of monitor (in cm)
+  distance: 196    # distance of participant from monitor (in cm)
+  gamma: 1.0
 
 mouse:
   visible: false
@@ -26,11 +26,11 @@ mri:
   skip: 0
 
 deepmreye:
-  # Fraction of the screen (from the bottom) that is visible to the
-  # participant. 1.0 = full screen visible. When < 1.0 the calibration
-  # window's height is shrunk to the visible band and all stimuli are
-  # shifted down so everything is in view (see settings_spinoza.yml).
-  visible_fraction: 1.0
+  # Only the bottom 70% of the projected screen is visible to the
+  # participant. The experiment shrinks the calibration window's height to
+  # this visible band and shifts all stimuli down so everything is in view.
+  # Horizontal extent is unchanged. Set to 1.0 if the full screen is visible.
+  visible_fraction: 0.7
   fixation:
     n_locs: [10, 10]
     duration: 1.5
